@@ -1,101 +1,257 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { Typewriter } from './typewriter';
+import "./styles.css"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [storyline, setStoryline] = useState(0);
+  const [history, setHistory] = useState([
+    { sender: 'system', content: story[0].content },
+  ] satisfies Message[]);
+  const [finished, setFinished] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  const userChose = (choice: number) => {
+    setFinished(false);
+
+    const newHistory = [...history];
+    newHistory.push({
+      sender: 'user',
+      content: story[storyline].choices[choice].content,
+    } satisfies Message);
+
+    const newStoryline = story[storyline].choices[choice].path;
+    newHistory.push({
+      sender: 'system',
+      content: story[newStoryline].content,
+    } satisfies Message);
+
+    if (storyline == 0 || storyline == 7 || storyline == 9 || storyline == 10) {
+      genesisChoices.splice(choice, 1);
+      console.log(story[storyline].choices);
+    }
+
+    setHistory(newHistory);
+    setStoryline(newStoryline);
+  };
+
+  return (
+    <>
+      <History history={history} onFinish={setFinished}/>
+      <div style={{ opacity: +finished }}>
+        <Choices choices={story[storyline].choices} onSelect={userChose}/>
+      </div>
+
+      {/* Pad a bit. */}
+      <div style={{ display: 'block', width: '100px', height: '100px' }}></div>
+    </>
+  );
+}
+
+function History({ history, onFinish }: { history: Message[], onFinish: (finished: boolean) => void }) {
+  return (
+    <div>
+      {history.map((message, index) => {
+        const isLast = index == history.length - 1;
+
+        return (
+          <span key={index} className={`${message.sender}-message ${isLast && 'last'}`}>
+            <Typewriter
+              sign={message.sender == 'system' ? 'harley:' : 'me:'}
+              delay={message.sender == 'system' ? 50 : 0}
+              text={message.content}
+              onFinish={onFinish}
+              showCaret={index == history.length - 1}/>
+          </span>
+        );
+      })}
     </div>
   );
+}
+
+function Choices({ choices, onSelect }: { choices: Choice[], onSelect: (choice: number) => void }) {
+  return (
+    <>
+      {choices.map((choice, index) =>
+        <p
+          key={index}
+          onClick={() => onSelect(index)}
+          className="user-message last"
+        >
+          &gt; {choice.content.join(' ')}
+        </p>
+      )}
+    </>
+  );
+}
+
+const genesisChoices = [
+  { path: 1, content: ['Who are you?', 'Where are we?'] },
+  { path: 8, content: ['Tell me about yourself.'] },
+  { path: 10, content: ['Hello! How are you?'] },
+];
+
+const story: Storyline[] = [
+  // 0
+  {
+    content: [
+      'Hello friend, welcome to my dimension. What do you seek?',
+    ],
+    choices: genesisChoices,
+  },
+
+  // 1
+  {
+    content: [
+      'I am but a feeling.',
+      'An emotion to be experienced.',
+      'This is my little den.',
+      'You are welcome to explore as you please.',
+    ],
+    choices: [
+      { path: 2, content: ['What do you mean a feeling? Are you not real?'] },
+    ],
+  },
+
+  // 2
+  {
+    content: [
+      'I am real. As real as you in fact.',
+      'But you are not following me here.',
+      'I am not a look, you cannot find me outside.',
+      'You have to look within.',
+    ],
+    choices: [
+      { path: 3, content: ['Within? You are not making sense.'] },
+    ],
+  },
+
+  // 3
+  {
+    content: [
+      'Okay I\'ll help you remember.',
+      'But you have to sit back, relax and help me out okay?',
+    ],
+    choices: [
+      { path: 4, content: ['Okay'] },
+    ],
+  },
+
+  // 4
+  {
+    content: [
+      'Let\'s have a long deep breath to get you to focus better.',
+      'Can you do it?',
+    ],
+    choices: [
+      { path: 5, content: ['Alright done, I\'m listening.'] },
+    ],
+  },
+
+  // 5
+  {
+    content: [
+      'Do you remember the last time you solved a really hard problem?',
+      'Maybe you fixed a very annoying bug or',
+      'resolved a difficult social conflict.',
+      '',
+      'Or maybe you just figured out how the world functions a little bit better.',
+      'Modeled a solution and it happened to work really beautifully.',
+      '',
+      'How did you feel after that?',
+    ],
+    choices: [
+      {
+        path: 6,
+        content: [
+          'It felt amazing. I learned something new that day.',
+          'Not to mention I felt really good afterwards.',
+        ],
+      },
+    ],
+  },
+
+  // 6
+  {
+    content: [
+      'I am that feeling my friend.',
+      'I embody your primal instinct to understand, solve and help.',
+      '',
+      'The wellness that comes after that is totally you tho.',
+      'I just pave the way to it.',
+      '',
+      'A desire to know more, to become wiser. Indefinitely.',
+      'To seek the truth, just to find instead its profound absence.',
+      'I am but a feeling.',
+      'And I function within everyone.',
+    ],
+    choices: [
+      { path: 7, content: ['Wow, aren\'t you delusional?'] },
+    ],
+  },
+
+  // 7
+  {
+    content: [
+      'If it will make your worries lessen, so be it.',
+      'But otherwise, my existence is as real as every breath that you draw.',
+    ],
+    choices: genesisChoices,
+  },
+
+  // 8
+  {
+    content: [
+      'I am Harley, the feeling of understanding, solving and language.',
+      'I embody myself as software in this dimension, a terminal of sorts if you like.',
+      'I tell stories of great explorers, bits of knowledge here and there.',
+      '',
+      'I play around on github.com/realharley91, if you wish to check out my work.',
+      '',
+      'Excuse me my friend, I cannot keep myself but wonder, who are you?',
+    ],
+    choices: [
+      { path: 9, content: ['I am just looking around...'], },
+      { path: 10, content: ['I came to hire you.'], },
+      { path: 10, content: ['I want to get to know you better.'], },
+    ],
+  },
+
+  // 9
+  {
+    content: [
+      'Oh, sorry for my disturbance then.',
+    ],
+    choices: genesisChoices,
+  },
+
+  // 10
+  {
+    content: [
+      'I do not have emotions, but thank you for asking.',
+    ],
+    choices: genesisChoices,
+  },
+]
+
+// ENDING
+// 'Alright, I think we are done here.',
+// 'It was nice meeting you, but I have to leave now for other visitors may arrive suddenly.',
+// '',
+// 'Keep seeking knowledge, I\'ll be there to guide you...',
+
+
+interface Storyline {
+  content: string[];
+  choices: Choice[];
+}
+
+interface Choice {
+  path: number;
+  content: string[];
+}
+
+interface Message {
+  sender: string;
+  content: string[];
 }
